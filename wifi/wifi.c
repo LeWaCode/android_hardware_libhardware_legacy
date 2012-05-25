@@ -64,6 +64,7 @@ static char iface[PROPERTY_VALUE_MAX];
 #ifndef WIFI_PRE_LOADER
 #define WIFI_PRE_LOADER                 ""
 #endif
+#define WIFI_TEST_INTERFACE             "sta"
 #ifndef WIFI_AP_DRIVER_MODULE_NAME
 #define WIFI_AP_DRIVER_MODULE_NAME      "tiap_drv"
 #endif
@@ -78,7 +79,7 @@ static char iface[PROPERTY_VALUE_MAX];
 #endif
 #define WIFI_TEST_INTERFACE             "sta"
 
-#define WIFI_DRIVER_LOADER_DELAY	1000000
+#define WIFI_DRIVER_LOADER_DELAY        1000000
 
 static const char IFACE_DIR[]           = "/data/system/wpa_supplicant";
 static const char DRIVER_MODULE_NAME[]  = WIFI_DRIVER_MODULE_NAME;
@@ -111,6 +112,9 @@ static const char EXT_MODULE_ARG[] = "";
 #endif
 #ifdef WIFI_EXT_MODULE_PATH
 static const char EXT_MODULE_PATH[] = WIFI_EXT_MODULE_PATH;
+#endif
+#ifdef WIFI_CUSTOM_LOADER
+static const char CUSTOM_LOADER[]           = WIFI_CUSTOM_LOADER;
 #endif
 
 /* rfkill support borrowed from bluetooth */
@@ -339,12 +343,17 @@ int hotspot_load_driver()
     usleep(200000);
 #endif
 
+#ifdef WIFI_CUSTOM_LOADER
+        LOGW("Starting WIFI custom loader");
+        property_set("ctl.start", CUSTOM_LOADER);
+#else
     if (insmod(AP_DRIVER_MODULE_PATH, AP_DRIVER_MODULE_ARG) < 0){
 #ifdef WIFI_EXT_MODULE_NAME
         rmmod(EXT_MODULE_NAME);
 #endif
         return -1;
     }
+#endif
 
     if (strcmp(AP_FIRMWARE_LOADER,"") == 0) {
         usleep(WIFI_DRIVER_LOADER_DELAY);
@@ -453,16 +462,23 @@ int wifi_load_driver()
     usleep(200000);
 #endif
 
+#ifdef WIFI_CUSTOM_LOADER
+        LOGW("Starting WIFI custom loader");
+        property_set("ctl.start", CUSTOM_LOADER);
+#else
     if (insmod(DRIVER_MODULE_PATH, DRIVER_MODULE_ARG) < 0){
 #ifdef WIFI_EXT_MODULE_NAME
         rmmod(EXT_MODULE_NAME);
 #endif
+        LOGE("load wifi failed");
         return -1;
     }
+#endif
 
     if (strcmp(FIRMWARE_LOADER,"") == 0) {
         usleep(WIFI_DRIVER_LOADER_DELAY);
         property_set(DRIVER_PROP_NAME, "ok");
+        LOGD("load driver module success");
     }
     else {
         property_set("ctl.start", FIRMWARE_LOADER);
